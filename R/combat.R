@@ -5,8 +5,13 @@
 # If using this code, make sure you agree and accept this license. 
 # Code optimization improved by Richard Beare 
 
+# Modified by Andrew Chen for covbat_simulations.R
+# Added functionality to use only training data as input and to have 
+# residualized observations as output
 
-combat <- function(dat, batch, mod=NULL, eb=TRUE, verbose=TRUE, parametric=TRUE){
+combat <- function(dat, batch, mod=NULL, eb=TRUE, verbose=TRUE, parametric=TRUE, mean.only = FALSE, resid = FALSE, # leave residualized
+                   train = NULL # labels for train set used to determine betas, have at least one of each level of covariates
+){
   dat <- as.matrix(dat)
   
   .checkConstantRows <- function(dat){
@@ -19,9 +24,9 @@ combat <- function(dat, batch, mod=NULL, eb=TRUE, verbose=TRUE, parametric=TRUE)
   }
   .checkConstantRows(dat)
   if (eb){
-      if (verbose) cat("[combat] Performing ComBat with empirical Bayes\n")
+    if (verbose) cat("[combat] Performing ComBat with empirical Bayes\n")
   } else {
-      if (verbose) cat("[combat] Performing ComBat without empirical Bayes (L/S model)\n")
+    if (verbose) cat("[combat] Performing ComBat without empirical Bayes (L/S model)\n")
   }
   # make batch a factor and make a set of indicators for batch
   batch <- as.factor(batch)
@@ -55,14 +60,24 @@ combat <- function(dat, batch, mod=NULL, eb=TRUE, verbose=TRUE, parametric=TRUE)
       }
     }
   }
-    
   
-  ##Standardize Data across features
+  ## Standardize Data across features
   if (verbose) cat('[combat] Standardizing Data across features\n')
-  B.hat1 <- solve(crossprod(design))
-  B.hat1 <- tcrossprod(B.hat1, design)
-  B.hat <- tcrossprod(B.hat1, dat)
-  #Standarization Model
+  
+  # Estimate coefficients using training set if specified, otherwise use full data
+  if (!is.null(train)) {
+    design_tr <- design[train,]
+    
+    B.hat1 <- solve(crossprod(design_tr))
+    B.hat1 <- tcrossprod(B.hat1, design_tr)
+    B.hat <- tcrossprod(B.hat1, dat[,train])
+  } else {
+    B.hat1 <- solve(crossprod(design))
+    B.hat1 <- tcrossprod(B.hat1, design)
+    B.hat <- tcrossprod(B.hat1, dat)
+  }
+  
+  # Standardization Model
   grand.mean <- crossprod(n.batches/n.array, B.hat[1:n.batch,])
   var.pooled <- ((dat-t(design%*%B.hat))^2)%*%rep(1/n.array,n.array)
   stand.mean <- crossprod(grand.mean, t(rep(1,n.array)))
@@ -73,53 +88,54 @@ combat <- function(dat, batch, mod=NULL, eb=TRUE, verbose=TRUE, parametric=TRUE)
   }	
   s.data <- (dat-stand.mean)/(tcrossprod(sqrt(var.pooled), rep(1,n.array)))
   
-  ##Get regression batch effect parameters
+  ## Get regression batch effect parameters
   if (eb){
-      if (verbose) cat("[combat] Fitting L/S model and finding priors\n")
+    if (verbose) cat("[combat] Fitting L/S model and finding priors\n")
   } else {
-      if (verbose) cat("[combat] Fitting L/S model\n")
+    if (verbose) cat("[combat] Fitting L/S model\n")
   }
   batch.design <- design[,1:n.batch]
   gamma.hat <- tcrossprod(solve(crossprod(batch.design, batch.design)), batch.design)
   gamma.hat <- tcrossprod(gamma.hat, s.data)
   delta.hat <- NULL
   for (i in batches){
-    delta.hat <- rbind(delta.hat,rowVars(s.data, cols=i, na.rm=TRUE))
+    delta.hat <- rbind(delta.hat,rowVars(s.data[,i], na.rm=TRUE)) # fixed error
   }
-
+  
   # Empirical Bayes correction:
   gamma.star <- delta.star <- NULL
   gamma.bar <- t2 <- a.prior <- b.prior <- NULL
   if (eb){
-      ##Find Priors
-      #gamma.bar <- apply(gamma.hat, 1, mean)
-      #t2 <- apply(gamma.hat, 1, var)
-      gamma.bar <- rowMeans(gamma.hat)
-      t2 <- rowVars(gamma.hat)
-      a.prior <- apriorMat(delta.hat)
-      b.prior <- bpriorMat(delta.hat)
-      
-      ##Find EB batch adjustments
-      if (parametric){
-        if (verbose) cat("[combat] Finding parametric adjustments\n")
-        for (i in 1:n.batch){
-            temp <- it.sol(s.data[,batches[[i]]],gamma.hat[i,],delta.hat[i,],gamma.bar[i],t2[i],a.prior[i],b.prior[i])
-            gamma.star <- rbind(gamma.star,temp[1,])
-            delta.star <- rbind(delta.star,temp[2,])
-        }
-      } else {
-        if (verbose) cat("[combat] Finding non-parametric adjustments\n")
-        for (i in 1:n.batch){
-            temp <- int.eprior(as.matrix(s.data[, batches[[i]]]),gamma.hat[i,], delta.hat[i,])
-            gamma.star <- rbind(gamma.star,temp[1,])
-            delta.star <- rbind(delta.star,temp[2,])
-        }
+    ##Find Priors
+    #gamma.bar <- apply(gamma.hat, 1, mean)
+    #t2 <- apply(gamma.hat, 1, var)
+    gamma.bar <- rowMeans(gamma.hat)
+    t2 <- rowVars(gamma.hat)
+    a.prior <- apriorMat(delta.hat)
+    b.prior <- bpriorMat(delta.hat)
+    
+    ##Find EB batch adjustments
+    if (parametric){
+      if (verbose) cat("[combat] Finding parametric adjustments\n")
+      for (i in 1:n.batch){
+        temp <- it.sol(s.data[,batches[[i]]],gamma.hat[i,],delta.hat[i,],gamma.bar[i],t2[i],a.prior[i],b.prior[i])
+        gamma.star <- rbind(gamma.star,temp[1,])
+        delta.star <- rbind(delta.star,temp[2,])
       }
-      
+    } else {
+      if (verbose) cat("[combat] Finding non-parametric adjustments\n")
+      for (i in 1:n.batch){
+        temp <- int.eprior(as.matrix(s.data[, batches[[i]]]),gamma.hat[i,], delta.hat[i,])
+        gamma.star <- rbind(gamma.star,temp[1,])
+        delta.star <- rbind(delta.star,temp[2,])
+      }
+    }
+    
   } 
-
-
-
+  
+  if (mean.only) {
+    delta.star <- array(1, dim = dim(delta.star))
+  }
   
   ### Normalize the Data ###
   if (verbose) cat("[combat] Adjusting the Data\n")
@@ -127,18 +143,24 @@ combat <- function(dat, batch, mod=NULL, eb=TRUE, verbose=TRUE, parametric=TRUE)
   j <- 1
   for (i in batches){
     if (eb){
-        bayesdata[,i] <- (bayesdata[,i]-t(batch.design[i,]%*%gamma.star))/tcrossprod(sqrt(delta.star[j,]), rep(1,n.batches[j]))
+      bayesdata[,i] <- (bayesdata[,i]-t(batch.design[i,]%*%gamma.star))/tcrossprod(sqrt(delta.star[j,]), rep(1,n.batches[j]))
     } else {
-        bayesdata[,i] <- (bayesdata[,i]-t(batch.design[i,]%*%gamma.hat))/tcrossprod(sqrt(delta.hat[j,]), rep(1,n.batches[j]))
+      bayesdata[,i] <- (bayesdata[,i]-t(batch.design[i,]%*%gamma.hat))/tcrossprod(sqrt(delta.hat[j,]), rep(1,n.batches[j]))
     }
     j <- j+1
   }
   
-  bayesdata <- (bayesdata*(tcrossprod(sqrt(var.pooled), rep(1,n.array))))+stand.mean
-  return(list(dat.combat=bayesdata, 
-    gamma.hat=gamma.hat, delta.hat=delta.hat, 
-    gamma.star=gamma.star, delta.star=delta.star, 
-    gamma.bar=gamma.bar, t2=t2, a.prior=a.prior, b.prior=b.prior, batch=batch, mod=mod, 
-    stand.mean=stand.mean, stand.sd=sqrt(var.pooled)[,1])
+  if (resid == FALSE) {
+    bayesdata <- (bayesdata*(tcrossprod(sqrt(var.pooled), rep(1,n.array))))+stand.mean
+  } else {
+    bayesdata <- bayesdata*(tcrossprod(sqrt(var.pooled), rep(1,n.array)))
+  }
+  
+  return(list(dat.combat=bayesdata,
+              s.data=s.data,
+              gamma.hat=gamma.hat, delta.hat=delta.hat,
+              gamma.star=gamma.star, delta.star=delta.star,
+              gamma.bar=gamma.bar, t2=t2, a.prior=a.prior, b.prior=b.prior, batch=batch, mod=mod,
+              stand.mean=stand.mean, stand.sd=sqrt(var.pooled)[,1])
   )
 }
