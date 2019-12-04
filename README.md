@@ -1,8 +1,8 @@
-# ComBatHarmonization
-### Harmonization of multi-site imaging data with ComBat
+# CovBat_Harmonization
+### Correcting Covariance Batch Effects (CovBat): Harmonization of mean and covariance for multi-site data
 
 --------
-**Maintainer**: Jean-Philippe Fortin, fortin946@gmail.com
+**Maintainer**: Andrew Chen, andrewac@pennmedicine.upenn.edu
 
 **License**: Artistic License 2.0
 
@@ -14,15 +14,21 @@
 | ComBat for multi-site cortical thickness measurements    | Jean-Philippe Fortin, Nicholas Cullen, Yvette I. Sheline, Warren D. Taylor, Irem Aselcioglu, Philip A. Cook, Phil Adams, Crystal Cooper, Maurizio Fava, Patrick J. McGrath, Melvin McInnis, Mary L. Phillips, Madhukar H. Trivedi, Myrna M. Weissman, Russell T. Shinohara. **Harmonization of cortical thickness measurements across scanners and sites**. NeuroImage, 167, 104-120, 2018  |[Link](https://www.sciencedirect.com/science/article/pii/S105381191730931X)| 
 | Original ComBat paper for gene expression array    |  W. Evan Johnson and Cheng Li, **Adjusting batch effects in microarray expression data using empirical Bayes methods**. Biostatistics, 8(1):118-127, 2007.      | [Link](https://academic.oup.com/biostatistics/article/8/1/118/252073/Adjusting-batch-effects-in-microarray-expression) |
 
+If you are using CovBat for harmonization of mean and covariance, please cite the following preprint:
+
+|       | Citation     | Paper Link
+| -------------  | -------------  | -------------  |
+| Removal of Scanner Effects in Covariance Improves Multivariate Pattern Analysis in Neuroimaging Data  | Andrew A. Chen, Joanne C. Beer, Nicholas J. Tustison, Philip A. Cook, Russell T. Shinohara, Haochang Shou, for the Alzheimer’s Disease Neuroimaging Initiative **Removal of Scanner Effects in Covariance Improves Multivariate Pattern Analysis in Neuroimaging Data**. BioRxiv 858415 [Preprint], December 2, 2019. Available from: https://doi.org/10.1101/858415. |[Link](https://www.biorxiv.org/content/10.1101/858415v1)| 
 
 ## Table of content
 - [1. Introduction](#id-section1)
-- [2. Software](#id-section2)
-- [3. Testing](#id-section3)
+- [2. Introduction](#id-section2)
 
 <div id='id-section1'/>
 
 ## 1. Introduction
+
+Placeholder for CovBat introduction. ComBat introduction from https://github.com/Jfortin1/ComBatHarmonization follows:
 
 Imaging data suffer from technical between-scanner variation that hinders comparisons of images across imaging sites, scanners and over time. This includes common imaging modalities, such as MRI, fMRI and DTI, as well as measurements derived from those modalities, for instance ROI volumes, RAVENS maps, cortical thickness measurements, connectome matrices, etc. To maximize statistical power, post-processing data harmonization is a powerful technique to remove unwanted variation when combining data across scanners and sites. 
 
@@ -42,31 +48,3 @@ The ComBat algorithm also accepts an optional input:
 ## 2. Software
 
 The reference implementation (Standard Version) of ComBat, developed for gene expression analyses, is written in R and is part of the `sva` package available through the Bioconductor project [here](https://bioconductor.org/packages/release/bioc/html/sva.html). We include here a reimplementation of ComBat in both R and Matlab for the harmonization of imaging data. Our implementation extends the original code for more flexibility and additional visualization of the internal components of the algorithm. We are also currently working on several extensions of the original method that will be included here as well. We use the same open-source license as the `sva` package, that is the Artistic License 2.0. 
-
-**Tutorials, instructions and examples for using ComBat:**
-- [R implementation](https://github.com/Jfortin1/ComBatHarmonization/tree/master/R)
-- [Matlab implementation](https://github.com/Jfortin1/ComBatHarmonization/tree/master/Matlab)
-
-<div id='id-section2'/>
-
-## 3. Problem of missing values (NA and NaN)
-
-- Make sure that your input data matrix to ComBat only includes finite values (no NA or NaN).
-- Make sure to remove constant rows (for instance features that are 0 for all scans); not removing these rows will cause an error in ComBat or return NaN values. 
-
-
-
-## 4. Testing
-
-The `Testing` directory contains code for comparing and testing the outputs from R and Matlab. 
-
-## 5. News
-
-05-19-2019: Added the option of running the non-parametric version of ComBat in the Matlab implementation. 
-
-05-19-2019: Added the option of running the non-parametric version of ComBat in the R implementation. 
-
-
-
-
-

@@ -9,7 +9,7 @@
 # Added functionality to use only training data as input and to have 
 # residualized observations as output
 
-combat <- function(dat, batch, mod=NULL, eb=TRUE, verbose=TRUE, parametric=TRUE, mean.only = FALSE, resid = FALSE, # leave residualized
+combat_modded <- function(dat, batch, mod=NULL, eb=TRUE, verbose=TRUE, parametric=TRUE, mean.only = FALSE, resid = FALSE, # leave residualized
                    train = NULL # labels for train set used to determine betas, have at least one of each level of covariates
 ){
   dat <- as.matrix(dat)

@@ -168,7 +168,7 @@ covbat <- function(x, # input data
   scores <- x_pc$x[,1:npc]
   
   # ComBat without covariates to remove site effect in score mean/variance
-  scores_com <- combat(t(scores), bat, eb = score.eb, parametric = score.parametric)
+  scores_com <- combat_modded(t(scores), bat, eb = score.eb, parametric = score.parametric)
   full_scores <- x_pc$x
   full_scores[,1:npc] <- t(scores_com$dat.combat)
   
