@@ -1,0 +1,10 @@
+Package: CovBatHarmonization
+Type: Package
+Title: Correcting Covariance Batch Effects (CovBat)
+Version: 0.1.0
+Author: Andrew A. Chen
+Maintainer: Andrew A. Chen <andrewac@pennmedicine.upenn.edu>
+Description: Package for harmonization of covariance across sites.
+License: Artistic License 2.0
+Encoding: UTF-8
+LazyData: true
