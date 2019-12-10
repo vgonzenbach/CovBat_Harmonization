@@ -8,3 +8,5 @@ Description: Package for harmonization of covariance across sites.
 License: Artistic License 2.0
 Encoding: UTF-8
 LazyData: true
+Imports:
+  matrixStats
