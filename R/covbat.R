@@ -1,3 +1,27 @@
+#' Correcting Covariance Batch Effects: CovBat
+#' Performs original ComBat to residualize and harmonize observations followed by
+#' PCA step to harmonize covariance across sites
+#'
+#' @param x 
+#' @param bat 
+#' @param mod 
+#' @param percent.var 
+#' @param n.pc 
+#' @param mean.only 
+#' @param standardize 
+#' @param score.parametric 
+#' @param score.eb 
+#' @param eb 
+#' @param verbose 
+#' @param parametric 
+#' @param resid 
+#' @param train 
+#'
+#' @return
+#' @export
+#'
+#' @examples
+
 # Author: Andrew Chen, andrewac@pennmedicine.upenn.edu
 # Adapted from code by Jean-Philippe Fortin, fortin946@gmail.com, available at
 # https://github.com/Jfortin1/ComBatHarmonization
@@ -7,12 +31,14 @@
 # Correcting Covariance Batch Effects: CovBat
 # Performs original ComBat to residualize and harmonize observations followed by
 # PCA step to harmonize covariance across sites
+
 covbat <- function(x, # input data
                    bat, # vector of batch numbers
                    mod = NULL, # model matrix
                    percent.var = 80, # PC number selected to explain this % of variation
                    n.pc = NULL, # if specified, use this number of PCs instead
                    mean.only = FALSE, # scale parameter in initial ComBat, works better with scaling
+                   standardize = TRUE, # scale variances to be equal to 1 before PCA
                    score.parametric = TRUE, # parametric ComBat for scores
                    score.eb = FALSE, # empirical Bayes for scores
                    eb=TRUE, verbose=TRUE, parametric=TRUE,
@@ -158,6 +184,11 @@ covbat <- function(x, # input data
     j <- j+1
   }
   
+  # if standardize = FALSE, return to original scaling prior to PCA
+  if (!standardize) {
+    bayesdata <- bayesdata * (tcrossprod(sqrt(var.pooled), rep(1,n.array)))
+  }
+  
   comdata <- bayesdata
   x_pc <- prcomp(t(bayesdata)) # PC on ComBat-adjusted data
   
@@ -173,11 +204,12 @@ covbat <- function(x, # input data
   full_scores[,1:npc] <- t(scores_com$dat.combat)
   
   # Project scores back into observation space
-  x.covbat <- t(full_scores %*% t(x_pc$rotation))
+  x.covbat <- t(full_scores %*% t(x_pc$rotation)) + 
+    matrix(x_pc$center, dim(bayesdata)[1], dim(bayesdata)[2])
   
   if (resid == FALSE) {
     x.covbat <- x.covbat * (tcrossprod(sqrt(var.pooled), rep(1,n.array)))+stand.mean
-  } else {
+  } else if (standardize) {
     x.covbat <- x.covbat * (tcrossprod(sqrt(var.pooled), rep(1,n.array)))
   }
   

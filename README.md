@@ -6,7 +6,7 @@
 
 **License**: Artistic License 2.0
 
-**References**: If you are using ComBat for the harmonization of multi-site imaging data, please cite the following papers:
+**References**: If you are using CovBat, please cite the ComBat papers:
 
 |       | Citation     | Paper Link
 | -------------  | -------------  | -------------  |
@@ -18,7 +18,7 @@ If you are using CovBat for harmonization of mean and covariance, please cite th
 
 |       | Citation     | Paper Link
 | -------------  | -------------  | -------------  |
-| Removal of Scanner Effects in Covariance Improves Multivariate Pattern Analysis in Neuroimaging Data  | Andrew A. Chen, Joanne C. Beer, Nicholas J. Tustison, Philip A. Cook, Russell T. Shinohara, Haochang Shou, for the Alzheimer’s Disease Neuroimaging Initiative **Removal of Scanner Effects in Covariance Improves Multivariate Pattern Analysis in Neuroimaging Data**. BioRxiv 858415 [Preprint], December 2, 2019. Available from: https://doi.org/10.1101/858415. |[Link](https://www.biorxiv.org/content/10.1101/858415v1)| 
+| Original CovBat paper  | Andrew A. Chen, Joanne C. Beer, Nicholas J. Tustison, Philip A. Cook, Russell T. Shinohara, Haochang Shou, for the Alzheimer’s Disease Neuroimaging Initiative **Removal of Scanner Effects in Covariance Improves Multivariate Pattern Analysis in Neuroimaging Data**. BioRxiv 858415 [Preprint], December 2, 2019. Available from: https://doi.org/10.1101/858415. |[Link](https://www.biorxiv.org/content/10.1101/858415v1)| 
 
 ## Table of content
 - [1. Installation](#id-section1)
@@ -38,8 +38,10 @@ devtools::install_github("andy1764/CovBat_Harmonization")
 Then, you can load this package via
 
 ```
-library(CovBatHarmonization)
+library(CovBat)
 ```
+
+For Python, please visit the Python subdirectory.
 
 <div id='id-section2'/>
 

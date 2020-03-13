@@ -1,4 +1,4 @@
-Package: CovBatHarmonization
+Package: CovBat
 Type: Package
 Title: Correcting Covariance Batch Effects (CovBat)
 Version: 0.1.0
