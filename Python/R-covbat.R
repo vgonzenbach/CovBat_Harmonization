@@ -1,12 +1,11 @@
-#!/usr/bin/env R
+# script to generate CovBat R output to compare with Python output
 
-source("http://bioconductor.org/biocLite.R")
-biocLite("sva")
-biocLite("bladderbatch")
-library("sva")
-options(stringsAsFactors=FALSE)
-
+# BiocManager::install("bladderbatch")
+# BiocManager::install("sva")
+library(sva)
+library(CovBat)
 library(bladderbatch)
+options(stringsAsFactors=FALSE)
 data(bladderdata)
 
 pheno = pData(bladderEset)
@@ -19,7 +18,9 @@ write.table(edata, row.names=T, quote=F, sep="\t", file="bladder-expr.txt")
 # use dataframe instead of matrix
 mod = model.matrix(~as.factor(cancer) + age, data=pheno)
 t = Sys.time()
-cdata = ComBat(dat=edata, batch=as.factor(pheno$batch), mod=mod, numCov=match("age", colnames(mod)))
+cov_out = covbat(edata, bat = as.factor(pheno$batch), mod = mod, 
+                 standardize = FALSE)
+cdata = cov_out$dat.covbat
 print(Sys.time() - t)
 print(cdata[1:5, 1:5])
 

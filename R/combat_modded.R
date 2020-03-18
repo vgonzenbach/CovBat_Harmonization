@@ -1,3 +1,21 @@
+#' Combatting batch effects when combining batches of gene expression microarray data
+#' 
+#'
+#' @param dat 
+#' @param batch 
+#' @param mod 
+#' @param eb 
+#' @param verbose 
+#' @param parametric 
+#' @param mean.only 
+#' @param resid 
+#' @param train 
+#'
+#' @return
+#' @export
+#'
+#' @examples
+
 # Author: Jean-Philippe Fortin, fortin946@gmail.com
 # This is a modification of the ComBat function code from the sva package that can be found at
 # https://bioconductor.org/packages/release/bioc/html/sva.html 
@@ -5,13 +23,13 @@
 # If using this code, make sure you agree and accept this license. 
 # Code optimization improved by Richard Beare 
 
-# Modified by Andrew Chen for covbat_simulations.R
+# Modified by Andrew Chen for covbat.R
 # Added functionality to use only training data as input and to have 
 # residualized observations as output
-
-combat_modded <- function(dat, batch, mod=NULL, eb=TRUE, verbose=TRUE, parametric=TRUE, mean.only = FALSE, resid = FALSE, # leave residualized
-                   train = NULL # labels for train set used to determine betas, have at least one of each level of covariates
-){
+combat_modded <- function(dat, batch, mod=NULL, eb=TRUE, verbose=TRUE, 
+                          parametric=TRUE, mean.only = FALSE, resid = FALSE,
+                          train = NULL)
+{
   dat <- as.matrix(dat)
   
   .checkConstantRows <- function(dat){

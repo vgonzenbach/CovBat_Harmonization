@@ -1,25 +1,39 @@
 #' Correcting Covariance Batch Effects: CovBat
-#' Performs original ComBat to residualize and harmonize observations followed by
-#' PCA step to harmonize covariance across sites
+#' 
+#' \code{covbat} harmonizes covariance of observations across sites. It
+#' first applies ComBat to harmonize mean and variance then adjusts variance of
+#' PC scores to harmonize covariance.
 #'
-#' @param x 
-#' @param bat 
-#' @param mod 
-#' @param percent.var 
-#' @param n.pc 
-#' @param mean.only 
-#' @param standardize 
-#' @param score.parametric 
-#' @param score.eb 
-#' @param eb 
-#' @param verbose 
-#' @param parametric 
-#' @param resid 
-#' @param train 
+#' @param x A \emph{p x n} matrix (or object coercible by \link[base]{as.matrix}
+#'   to a numeric matrix) of observations where \emph{p} is the number of
+#'   features and \emph{n} is the number of subjects.
+#' @param bat A factor (or object coercible by \link[base]{as.factor} to a 
+#'    factor) designating batch IDs.
+#' @param mod A design matrix, usually output of \link[stats]{model.matrix}.
+#' @param percent.var A numeric. The number of harmonized principal component 
+#'    scores is selected to explain this proportion of the variance.
+#' @param n.pc An optional numeric. If specified, this number of principal
+#'    component scores is harmonized. Overrides \code{percent.var}.
+#' @param train An optional vector specifying subset of observations used to 
+#'    estimate coefficients.
+#' @param mean.only If \code{TRUE}, ComBat step does not harmonize variance.
+#' @param std.var If \code{TRUE}, scales variances to be equal to 1 before PCA.
+#' @param resid Whether to leave intercept and covariates regressed out.
+#' @param eb If \code{TRUE}, uses ComBat model with empirical Bayes for mean
+#'   and variance harmonization.
+#' @param parametric If \code{TRUE}, uses ComBat model with empirical Bayes
+#'   for mean and variance harmonization.
+#' @param score.eb If \code{TRUE}, uses ComBat model with empirical Bayes for
+#'   harmonization of scores.
+#' @param score.parametric If \code{TRUE}, uses  parametric ComBat is used
+#'   for harmonization of scores.
+#' @param verbose Whether additional details are printed to console.
 #'
-#' @return
+#' @return \code{covbat} returns a list containing the following components:
+#' \item{dat.covbat}{harmonized data as a matrix with same dimensions as 
+#'    \code{x}}
 #' @export
-#'
+#' 
 #' @examples
 
 # Author: Andrew Chen, andrewac@pennmedicine.upenn.edu
@@ -31,28 +45,20 @@
 # Correcting Covariance Batch Effects: CovBat
 # Performs original ComBat to residualize and harmonize observations followed by
 # PCA step to harmonize covariance across sites
-
-covbat <- function(x, # input data
-                   bat, # vector of batch numbers
-                   mod = NULL, # model matrix
-                   percent.var = 80, # PC number selected to explain this % of variation
-                   n.pc = NULL, # if specified, use this number of PCs instead
-                   mean.only = FALSE, # scale parameter in initial ComBat, works better with scaling
-                   standardize = TRUE, # scale variances to be equal to 1 before PCA
-                   score.parametric = TRUE, # parametric ComBat for scores
-                   score.eb = FALSE, # empirical Bayes for scores
-                   eb=TRUE, verbose=TRUE, parametric=TRUE,
-                   resid=FALSE, # leave residualized
-                   train = NULL # labels for train set used to determine betas
-                   ) {
-  # apply ComBat to remove mean/scale, keep intercept/linear pred on the side
+covbat <- function(x, bat, mod = NULL, percent.var = 0.80, n.pc = NULL,
+                   train = NULL, mean.only = FALSE, std.var = FALSE, 
+                   resid = FALSE, eb = TRUE, parametric = TRUE,
+                   score.eb = FALSE, score.parametric = TRUE, verbose = FALSE)
+{
   dat <- as.matrix(x)
   
   .checkConstantRows <- function(dat){
     sds <- rowSds(dat)
     ns <- sum(sds==0)
     if (ns>0){
-      message <- paste0(ns, " rows (features) were found to be constant across samples. Please remove these rows before running ComBat.")
+      message <- paste0(ns, " rows (features) were found to be constant 
+                        across samples. Please remove these rows before 
+                        running ComBat.")
       stop(message)
     }
   }
@@ -60,7 +66,8 @@ covbat <- function(x, # input data
   if (eb){
     if (verbose) cat("[combat] Performing ComBat with empirical Bayes\n")
   } else {
-    if (verbose) cat("[combat] Performing ComBat without empirical Bayes (L/S model)\n")
+    if (verbose) cat("[combat] Performing ComBat without empirical Bayes 
+                     (L/S model)\n")
   }
   # make batch a factor and make a set of indicators for batch
   batch <- as.factor(bat)
@@ -79,18 +86,22 @@ covbat <- function(x, # input data
   design <- as.matrix(design[,!check])
   
   # Number of covariates or covariate levels
-  if (verbose) cat("[combat] Adjusting for",ncol(design)-ncol(batchmod),'covariate(s) or covariate level(s)\n')
+  if (verbose) cat("[combat] Adjusting for",ncol(design)-ncol(batchmod),
+                   'covariate(s) or covariate level(s)\n')
   
   # Check if the design is confounded
   if(qr(design)$rank<ncol(design)){
     if(ncol(design)==(n.batch+1)){
-      stop("[combat] The covariate is confounded with batch. Remove the covariate and rerun ComBat.")
+      stop("[combat] The covariate is confounded with batch. Remove the 
+           covariate and rerun ComBat.")
     }
     if(ncol(design)>(n.batch+1)){
       if((qr(design[,-c(1:n.batch)])$rank<ncol(design[,-c(1:n.batch)]))){
-        stop('The covariates are confounded. Please remove one or more of the covariates so the design is not confounded.')
+        stop('The covariates are confounded. Please remove one or more of the 
+             covariates so the design is not confounded.')
       } else {
-        stop("At least one covariate is confounded with batch. Please remove confounded covariates and rerun ComBat.")
+        stop("At least one covariate is confounded with batch. Please remove 
+             confounded covariates and rerun ComBat.")
       }
     }
   }
@@ -98,7 +109,7 @@ covbat <- function(x, # input data
   ## Standardize Data across features
   if (verbose) cat('[combat] Standardizing Data across features\n')
   
-  # Estimate coefficients using training set if specified, otherwise use full data
+  # Estimate coefficients using training set if specified, otherwise use full
   if (!is.null(train)) {
     design_tr <- design[train,]
     
@@ -129,7 +140,8 @@ covbat <- function(x, # input data
     if (verbose) cat("[combat] Fitting L/S model\n")
   }
   batch.design <- design[,1:n.batch]
-  gamma.hat <- tcrossprod(solve(crossprod(batch.design, batch.design)), batch.design)
+  gamma.hat <- tcrossprod(solve(crossprod(batch.design, batch.design)), 
+                          batch.design)
   gamma.hat <- tcrossprod(gamma.hat, s.data)
   delta.hat <- NULL
   for (i in batches){
@@ -152,14 +164,16 @@ covbat <- function(x, # input data
     if (parametric){
       if (verbose) cat("[combat] Finding parametric adjustments\n")
       for (i in 1:n.batch){
-        temp <- it.sol(s.data[,batches[[i]]],gamma.hat[i,],delta.hat[i,],gamma.bar[i],t2[i],a.prior[i],b.prior[i])
+        temp <- it.sol(s.data[,batches[[i]]], gamma.hat[i,], delta.hat[i,],
+                       gamma.bar[i], t2[i],a.prior[i], b.prior[i])
         gamma.star <- rbind(gamma.star,temp[1,])
         delta.star <- rbind(delta.star,temp[2,])
       }
     } else {
       if (verbose) cat("[combat] Finding non-parametric adjustments\n")
       for (i in 1:n.batch){
-        temp <- int.eprior(as.matrix(s.data[, batches[[i]]]),gamma.hat[i,], delta.hat[i,])
+        temp <- int.eprior(as.matrix(s.data[, batches[[i]]]),gamma.hat[i,], 
+                           delta.hat[i,])
         gamma.star <- rbind(gamma.star,temp[1,])
         delta.star <- rbind(delta.star,temp[2,])
       }
@@ -177,49 +191,56 @@ covbat <- function(x, # input data
   j <- 1
   for (i in batches){
     if (eb){
-      bayesdata[,i] <- (bayesdata[,i]-t(batch.design[i,]%*%gamma.star))/tcrossprod(sqrt(delta.star[j,]), rep(1,n.batches[j]))
+      bayesdata[,i] <- (bayesdata[,i]-t(batch.design[i,]%*%gamma.star))/
+        tcrossprod(sqrt(delta.star[j,]), rep(1,n.batches[j]))
     } else {
-      bayesdata[,i] <- (bayesdata[,i]-t(batch.design[i,]%*%gamma.hat))/tcrossprod(sqrt(delta.hat[j,]), rep(1,n.batches[j]))
+      bayesdata[,i] <- (bayesdata[,i]-t(batch.design[i,]%*%gamma.hat))/
+        tcrossprod(sqrt(delta.hat[j,]), rep(1,n.batches[j]))
     }
     j <- j+1
   }
+  
+  # save ComBat dataset
+  comdata <- (bayesdata*(tcrossprod(sqrt(var.pooled), rep(1,n.array)))) +
+    stand.mean
   
   # if standardize = FALSE, return to original scaling prior to PCA
   if (!standardize) {
     bayesdata <- bayesdata * (tcrossprod(sqrt(var.pooled), rep(1,n.array)))
   }
   
-  comdata <- bayesdata
   x_pc <- prcomp(t(bayesdata)) # PC on ComBat-adjusted data
   
   # Subset scores based on percent of variance explained
-  npc <- which(cumsum(x_pc$sdev/sum(x_pc$sdev)) > percent.var/100)[1]
+  npc <- which(cumsum(x_pc$sdev/sum(x_pc$sdev)) > percent.var)[1]
   if (!is.null(n.pc)) {npc <- n.pc}
   # print(npc)
   scores <- x_pc$x[,1:npc]
   
   # ComBat without covariates to remove site effect in score mean/variance
-  scores_com <- combat_modded(t(scores), bat, eb = score.eb, parametric = score.parametric)
+  scores_com <- combat_modded(t(scores), bat, eb = score.eb, 
+                              parametric = score.parametric)
   full_scores <- x_pc$x
   full_scores[,1:npc] <- t(scores_com$dat.combat)
   
   # Project scores back into observation space
   x.covbat <- t(full_scores %*% t(x_pc$rotation)) + 
     matrix(x_pc$center, dim(bayesdata)[1], dim(bayesdata)[2])
-  
-  if (resid == FALSE) {
-    x.covbat <- x.covbat * (tcrossprod(sqrt(var.pooled), rep(1,n.array)))+stand.mean
-  } else if (standardize) {
+  if (standardize) {
     x.covbat <- x.covbat * (tcrossprod(sqrt(var.pooled), rep(1,n.array)))
   }
+  if (resid == FALSE) {
+    x.covbat <- x.covbat + stand.mean
+  }
   
-  return(list(dat.covbat=x.covbat, 
-              s.data=s.data,
-              com.data=comdata,
-              gamma.hat=gamma.hat, delta.hat=delta.hat, 
-              gamma.star=gamma.star, delta.star=delta.star, 
-              gamma.bar=gamma.bar, t2=t2, a.prior=a.prior, b.prior=b.prior, batch=batch, mod=mod, 
-              stand.mean=stand.mean, stand.sd=sqrt(var.pooled)[,1],
-              scores.gamma=scores_com$gamma.hat, scores.delta=scores_com$delta.hat,
-              npc=npc, x.pc = x_pc, com.scores = scores_com))
+  return(list(dat.covbat = x.covbat, 
+              combat.out = list(dat.combat=comdata, s.data=s.data, 
+                                gamma.hat=gamma.hat, delta.hat=delta.hat,
+                                gamma.star=gamma.star, delta.star=delta.star,
+                                gamma.bar=gamma.bar, t2=t2, a.prior=a.prior, 
+                                b.prior=b.prior, batch=batch, mod=mod,
+                                stand.mean=stand.mean, 
+                                stand.sd=sqrt(var.pooled)[,1]),
+              combat.scores = scores_com,
+              npc=npc, x.pc = x_pc))
 }
