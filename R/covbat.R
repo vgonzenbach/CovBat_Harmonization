@@ -45,7 +45,7 @@
 #' @export
 #' 
 #' @examples
-covbat <- function(x, bat, mod = NULL, percent.var = 0.80, n.pc = NULL,
+covbat <- function(x, bat, mod = NULL, percent.var = 0.95, n.pc = NULL,
                    train = NULL, mean.only = FALSE, std.var = TRUE, 
                    resid = FALSE, eb = TRUE, parametric = TRUE,
                    score.eb = FALSE, score.parametric = TRUE, verbose = FALSE)
