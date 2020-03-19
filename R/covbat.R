@@ -1,3 +1,13 @@
+# Author: Andrew Chen, andrewac@pennmedicine.upenn.edu
+# Adapted from code by Jean-Philippe Fortin, fortin946@gmail.com, available at
+# https://github.com/Jfortin1/ComBatHarmonization
+# The original and present code is under the Artistic License 2.0.
+# If using this code, make sure you agree and accept this license.
+
+# Correcting Covariance Batch Effects: CovBat
+# Performs original ComBat to residualize and harmonize observations followed by
+# PCA step to harmonize covariance across sites
+
 #' Correcting Covariance Batch Effects: CovBat
 #' 
 #' \code{covbat} harmonizes covariance of observations across sites. It
@@ -9,7 +19,8 @@
 #'   features and \emph{n} is the number of subjects.
 #' @param bat A factor (or object coercible by \link[base]{as.factor} to a 
 #'    factor) designating batch IDs.
-#' @param mod A design matrix, usually output of \link[stats]{model.matrix}.
+#' @param mod An optional design matrix to preserve, usually output of 
+#'    \link[stats]{model.matrix}.
 #' @param percent.var A numeric. The number of harmonized principal component 
 #'    scores is selected to explain this proportion of the variance.
 #' @param n.pc An optional numeric. If specified, this number of principal
@@ -21,8 +32,7 @@
 #' @param resid Whether to leave intercept and covariates regressed out.
 #' @param eb If \code{TRUE}, uses ComBat model with empirical Bayes for mean
 #'   and variance harmonization.
-#' @param parametric If \code{TRUE}, uses ComBat model with empirical Bayes
-#'   for mean and variance harmonization.
+#' @param parametric If \code{TRUE}, uses parametric adjustments
 #' @param score.eb If \code{TRUE}, uses ComBat model with empirical Bayes for
 #'   harmonization of scores.
 #' @param score.parametric If \code{TRUE}, uses  parametric ComBat is used
@@ -35,18 +45,8 @@
 #' @export
 #' 
 #' @examples
-
-# Author: Andrew Chen, andrewac@pennmedicine.upenn.edu
-# Adapted from code by Jean-Philippe Fortin, fortin946@gmail.com, available at
-# https://github.com/Jfortin1/ComBatHarmonization
-# The original and present code is under the Artistic License 2.0.
-# If using this code, make sure you agree and accept this license.
-
-# Correcting Covariance Batch Effects: CovBat
-# Performs original ComBat to residualize and harmonize observations followed by
-# PCA step to harmonize covariance across sites
 covbat <- function(x, bat, mod = NULL, percent.var = 0.80, n.pc = NULL,
-                   train = NULL, mean.only = FALSE, std.var = FALSE, 
+                   train = NULL, mean.only = FALSE, std.var = TRUE, 
                    resid = FALSE, eb = TRUE, parametric = TRUE,
                    score.eb = FALSE, score.parametric = TRUE, verbose = FALSE)
 {
@@ -204,15 +204,15 @@ covbat <- function(x, bat, mod = NULL, percent.var = 0.80, n.pc = NULL,
   comdata <- (bayesdata*(tcrossprod(sqrt(var.pooled), rep(1,n.array)))) +
     stand.mean
   
-  # if standardize = FALSE, return to original scaling prior to PCA
-  if (!standardize) {
+  # if std.var = FALSE, return to original scaling prior to PCA
+  if (!std.var) {
     bayesdata <- bayesdata * (tcrossprod(sqrt(var.pooled), rep(1,n.array)))
   }
   
   x_pc <- prcomp(t(bayesdata)) # PC on ComBat-adjusted data
   
   # Subset scores based on percent of variance explained
-  npc <- which(cumsum(x_pc$sdev/sum(x_pc$sdev)) > percent.var)[1]
+  npc <- which(cumsum(x_pc$sdev^2/sum(x_pc$sdev^2)) > percent.var)[1]
   if (!is.null(n.pc)) {npc <- n.pc}
   # print(npc)
   scores <- x_pc$x[,1:npc]
@@ -226,7 +226,7 @@ covbat <- function(x, bat, mod = NULL, percent.var = 0.80, n.pc = NULL,
   # Project scores back into observation space
   x.covbat <- t(full_scores %*% t(x_pc$rotation)) + 
     matrix(x_pc$center, dim(bayesdata)[1], dim(bayesdata)[2])
-  if (standardize) {
+  if (std.var) {
     x.covbat <- x.covbat * (tcrossprod(sqrt(var.pooled), rep(1,n.array)))
   }
   if (resid == FALSE) {

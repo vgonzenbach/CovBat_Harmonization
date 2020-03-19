@@ -1,24 +1,6 @@
-#' Combatting batch effects when combining batches of gene expression microarray data
-#' 
-#'
-#' @param dat 
-#' @param batch 
-#' @param mod 
-#' @param eb 
-#' @param verbose 
-#' @param parametric 
-#' @param mean.only 
-#' @param resid 
-#' @param train 
-#'
-#' @return
-#' @export
-#'
-#' @examples
-
 # Author: Jean-Philippe Fortin, fortin946@gmail.com
-# This is a modification of the ComBat function code from the sva package that can be found at
-# https://bioconductor.org/packages/release/bioc/html/sva.html 
+# This is a modification of the ComBat function code from the sva package that 
+# can be found at https://bioconductor.org/packages/release/bioc/html/sva.html 
 # The original and present code is under the Artistic License 2.0.
 # If using this code, make sure you agree and accept this license. 
 # Code optimization improved by Richard Beare 
@@ -26,9 +8,41 @@
 # Modified by Andrew Chen for covbat.R
 # Added functionality to use only training data as input and to have 
 # residualized observations as output
-combat_modded <- function(dat, batch, mod=NULL, eb=TRUE, verbose=TRUE, 
-                          parametric=TRUE, mean.only = FALSE, resid = FALSE,
-                          train = NULL)
+
+#' Combatting batch effects when combining batches of gene expression microarray 
+#' data
+#' 
+#' \code{combat_modded} is a modified version of the ComBat code written by 
+#' Jean-Philippe Fortin available at 
+#' \url{https://github.com/Jfortin1/ComBatHarmonization/}. The function
+#' harmonizes the mean and variance of observations across sites under an
+#' empirical Bayes framework. \code{combat_modded} additionally includes options
+#' to output residualized observations, estimate coefficients using a training
+#' subset, and regress out unwanted confounders.
+#'
+#' @param dat 
+#' @param batch 
+#' @param mod An optional design matrix to preserve, usually output of 
+#'    \link[stats]{model.matrix}.
+#' @param nuisance.mod An optional design matrix to regress out, usually output 
+#'    of \link[stats]{model.matrix} without intercept.
+#' @param train 
+#' @param resid 
+#' @param eb 
+#' @param parametric 
+#' @param mean.only 
+#' @param verbose 
+#'
+#' @return
+#' @export
+#'
+#' @examples
+#' 
+#' @seealso Modification to ComBat to regress out unwanted confounders 
+#' proposed by Wachinger et al. (2020), \url{https://arxiv.org/abs/2002.05049}
+combat_modded <- function(dat, batch, mod=NULL, nuisance.mod = NULL, 
+                          train = NULL, resid = FALSE, eb = TRUE, 
+                          parametric = TRUE, mean.only = FALSE, verbose = TRUE)
 {
   dat <- as.matrix(dat)
   
@@ -50,6 +64,11 @@ combat_modded <- function(dat, batch, mod=NULL, eb=TRUE, verbose=TRUE,
   batch <- as.factor(batch)
   batchmod <- model.matrix(~-1+batch)  
   if (verbose) cat("[combat] Found",nlevels(batch),'batches\n')
+  
+  # add nuisance mod to mod, if specified
+  if (!is.null(nuisance.mod)) {
+    mod <- cbind(mod, nuisance.mod)
+  }
   
   # A few other characteristics on the batches
   n.batch <- nlevels(batch)
@@ -168,8 +187,20 @@ combat_modded <- function(dat, batch, mod=NULL, eb=TRUE, verbose=TRUE,
     j <- j+1
   }
   
-  if (resid == FALSE) {
-    bayesdata <- (bayesdata*(tcrossprod(sqrt(var.pooled), rep(1,n.array))))+stand.mean
+  # Reintroduce wanted covariates
+  all.mean <- crossprod(grand.mean, t(rep(1,n.array)))
+  if (!is.null(nuisance.mod)) {
+    tmp <- design;tmp[,c(1:n.batch)] <- 0
+    tmp[,(n.batch+dim(mod)[2]-dim(nuisance.mod)[2]):(dim(design)[2])] <- 0
+    wanted.mean <- all.mean+t(tmp%*%B.hat)
+  }
+  
+  if (!is.null(nuisance.mod)) {
+    bayesdata <- (bayesdata*(tcrossprod(sqrt(var.pooled), rep(1,n.array)))) +
+      wanted.mean
+  } else if (resid == FALSE) {
+    bayesdata <- (bayesdata*(tcrossprod(sqrt(var.pooled), rep(1,n.array)))) +
+      stand.mean
   } else {
     bayesdata <- bayesdata*(tcrossprod(sqrt(var.pooled), rep(1,n.array)))
   }
@@ -178,7 +209,8 @@ combat_modded <- function(dat, batch, mod=NULL, eb=TRUE, verbose=TRUE,
               s.data=s.data,
               gamma.hat=gamma.hat, delta.hat=delta.hat,
               gamma.star=gamma.star, delta.star=delta.star,
-              gamma.bar=gamma.bar, t2=t2, a.prior=a.prior, b.prior=b.prior, batch=batch, mod=mod,
-              stand.mean=stand.mean, stand.sd=sqrt(var.pooled)[,1])
+              gamma.bar=gamma.bar, t2=t2, a.prior=a.prior, b.prior=b.prior, 
+              batch=batch, mod=mod,
+              stand.mean=stand.mean, stand.sd=sqrt(var.pooled)[,1]),
   )
 }

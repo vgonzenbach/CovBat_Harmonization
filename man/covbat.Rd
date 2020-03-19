@@ -16,8 +16,8 @@ covbat(
   resid = FALSE,
   eb = TRUE,
   parametric = TRUE,
-  score.parametric = TRUE,
   score.eb = FALSE,
+  score.parametric = TRUE,
   verbose = FALSE
 )
 }
@@ -44,8 +44,7 @@ estimate coefficients.}
 
 \item{std.var}{If \code{TRUE}, scales variances to be equal to 1 before PCA.}
 
-\item{resid}{If \code{TRUE}, output has intercept and covariate effects
-regressed out.}
+\item{resid}{Whether to leave intercept and covariates regressed out.}
 
 \item{eb}{If \code{TRUE}, uses ComBat model with empirical Bayes for mean
 and variance harmonization.}
@@ -53,11 +52,11 @@ and variance harmonization.}
 \item{parametric}{If \code{TRUE}, uses ComBat model with empirical Bayes
 for mean and variance harmonization.}
 
-\item{score.parametric}{If \code{TRUE}, uses  parametric ComBat is used
-for harmonization of scores.}
-
 \item{score.eb}{If \code{TRUE}, uses ComBat model with empirical Bayes for
 harmonization of scores.}
+
+\item{score.parametric}{If \code{TRUE}, uses  parametric ComBat is used
+for harmonization of scores.}
 
 \item{verbose}{Whether additional details are printed to console.}
 }

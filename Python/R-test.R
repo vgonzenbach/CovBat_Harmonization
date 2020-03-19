@@ -19,9 +19,16 @@ write.table(edata, row.names=T, quote=F, sep="\t", file="bladder-expr.txt")
 mod = model.matrix(~as.factor(cancer) + age, data=pheno)
 t = Sys.time()
 cov_out = covbat(edata, bat = as.factor(pheno$batch), mod = mod, 
-                 standardize = FALSE)
-cdata = cov_out$dat.covbat
+                 std.var = TRUE, percent.var = 0.80)
+covdata = cov_out$dat.covbat
 print(Sys.time() - t)
-print(cdata[1:5, 1:5])
+print(covdata[1:5, 1:5])
 
-write.table(cdata, "r-batch.txt", sep="\t", quote=F)
+t = Sys.time()
+com_out = combat_modded(edata, bat = as.factor(pheno$batch), mod = mod)
+comdata = com_out$dat.combat
+print(Sys.time() - t)
+print(comdata[1:5, 1:5])
+
+write.table(covdata, "r-covbat.txt", sep="\t", quote=F)
+write.table(comdata, "r-combat.txt", sep="\t", quote=F)
