@@ -12,11 +12,11 @@
 #' Combatting batch effects when combining batches of gene expression microarray 
 #' data
 #' 
-#' \code{combat_modded} is a modified version of the ComBat code written by 
+#' \code{combat} is a modified version of the ComBat code written by 
 #' Jean-Philippe Fortin available at 
 #' \url{https://github.com/Jfortin1/ComBatHarmonization/}. The function
 #' harmonizes the mean and variance of observations across sites under an
-#' empirical Bayes framework. \code{combat_modded} additionally includes options
+#' empirical Bayes framework. \code{combat} additionally includes options
 #' to output residualized observations, estimate coefficients using a training
 #' subset, and regress out unwanted confounders.
 #'
@@ -40,9 +40,9 @@
 #' 
 #' @seealso Modification to ComBat to regress out unwanted confounders 
 #' proposed by Wachinger et al. (2020), \url{https://arxiv.org/abs/2002.05049}
-combat_modded <- function(dat, batch, mod=NULL, nuisance.mod = NULL, 
-                          train = NULL, resid = FALSE, eb = TRUE, 
-                          parametric = TRUE, mean.only = FALSE, verbose = TRUE)
+combat <- function(dat, batch, mod=NULL, nuisance.mod = NULL, 
+                   train = NULL, resid = FALSE, eb = TRUE, 
+                   parametric = TRUE, mean.only = FALSE, verbose = TRUE)
 {
   dat <- as.matrix(dat)
   
@@ -211,6 +211,6 @@ combat_modded <- function(dat, batch, mod=NULL, nuisance.mod = NULL,
               gamma.star=gamma.star, delta.star=delta.star,
               gamma.bar=gamma.bar, t2=t2, a.prior=a.prior, b.prior=b.prior, 
               batch=batch, mod=mod,
-              stand.mean=stand.mean, stand.sd=sqrt(var.pooled)[,1]),
-  )
+              stand.mean=stand.mean, stand.sd=sqrt(var.pooled)[,1],
+              B.hat = B.hat))
 }

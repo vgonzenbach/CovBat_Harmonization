@@ -8,11 +8,11 @@ covbat(
   x,
   bat,
   mod = NULL,
-  percent.var = 0.8,
+  percent.var = 0.95,
   n.pc = NULL,
   train = NULL,
   mean.only = FALSE,
-  std.var = FALSE,
+  std.var = TRUE,
   resid = FALSE,
   eb = TRUE,
   parametric = TRUE,
@@ -29,7 +29,8 @@ features and \emph{n} is the number of subjects.}
 \item{bat}{A factor (or object coercible by \link[base]{as.factor} to a 
 factor) designating batch IDs.}
 
-\item{mod}{A design matrix, usually output of \link[stats]{model.matrix}.}
+\item{mod}{An optional design matrix to preserve, usually output of 
+\link[stats]{model.matrix}.}
 
 \item{percent.var}{A numeric. The number of harmonized principal component 
 scores is selected to explain this proportion of the variance.}
@@ -49,8 +50,7 @@ estimate coefficients.}
 \item{eb}{If \code{TRUE}, uses ComBat model with empirical Bayes for mean
 and variance harmonization.}
 
-\item{parametric}{If \code{TRUE}, uses ComBat model with empirical Bayes
-for mean and variance harmonization.}
+\item{parametric}{If \code{TRUE}, uses parametric adjustments}
 
 \item{score.eb}{If \code{TRUE}, uses ComBat model with empirical Bayes for
 harmonization of scores.}

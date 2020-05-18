@@ -240,7 +240,8 @@ covbat <- function(x, bat, mod = NULL, percent.var = 0.95, n.pc = NULL,
                                 gamma.bar=gamma.bar, t2=t2, a.prior=a.prior, 
                                 b.prior=b.prior, batch=batch, mod=mod,
                                 stand.mean=stand.mean, 
-                                stand.sd=sqrt(var.pooled)[,1]),
+                                stand.sd=sqrt(var.pooled)[,1],
+                                B.hat=B.hat),
               combat.scores = scores_com,
               npc=npc, x.pc = x_pc))
 }
