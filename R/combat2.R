@@ -5,7 +5,7 @@
 # If using this code, make sure you agree and accept this license. 
 # Code optimization improved by Richard Beare 
 
-# Modified by Andrew Chen for covbat.R
+# Modified by Andrew Chen
 # Added functionality to use only training data as input and to have 
 # residualized observations as output
 
@@ -18,35 +18,37 @@
 #' harmonizes the mean and variance of observations across sites under an
 #' empirical Bayes framework. \code{combat} additionally includes options
 #' to output residualized observations, estimate coefficients using a training
-#' subset, and regress out unwanted confounders.
+#' subset, and regress out unwanted confounders. \code{combat2} further includes
+#' options to control for covariate effects in variance using 
+#' \link[lmvar]{lmvar}
 #'
-#' @param dat A \emph{p x n} matrix (or object coercible by \link[base]{as.matrix}
-#'   to a numeric matrix) of observations where \emph{p} is the number of
-#'   features and \emph{n} is the number of subjects.
-#' @param batch Factor (or object coercible by \link[base]{as.factor} to a 
-#'    factor) designating batch IDs.
+#' @param dat 
+#' @param batch 
 #' @param mod An optional design matrix to preserve, usually output of 
 #'    \link[stats]{model.matrix}.
+#' @param var.mod An optional design matrix to preserve in the variance, usually
+#'    output of \link[stats]{model.matrix}.
 #' @param nuisance.mod An optional design matrix to regress out, usually output 
 #'    of \link[stats]{model.matrix} without intercept.
-#' @param train Optional logical vector specifying subset of observations used
-#'    to estimate coefficients.
-#' @param resid Whether to leave intercept and covariates regressed out.
-#' @param eb If \code{TRUE}, uses ComBat model with empirical Bayes.
-#' @param parametric If \code{TRUE}, uses parametric updates.
-#' @param mean.only If \code{TRUE}, ComBat step does not harmonize variance.
-#' @param verbose Whether additional details are printed to console.
+#' @param train 
+#' @param resid 
+#' @param eb 
+#' @param parametric 
+#' @param mean.only 
+#' @param verbose 
 #'
 #' @return
+#' 
+#' @import lmvar
 #' @export
 #'
 #' @examples
 #' 
 #' @seealso Modification to ComBat to regress out unwanted confounders 
 #' proposed by Wachinger et al. (2020), \url{https://arxiv.org/abs/2002.05049}
-combat <- function(dat, batch, mod = NULL, nuisance.mod = NULL, 
+combat2 <- function(dat, batch, mod = NULL, var.mod = NULL, nuisance.mod = NULL, 
                    train = NULL, resid = FALSE, eb = TRUE, 
-                   parametric = TRUE, mean.only = FALSE, verbose = FALSE)
+                   parametric = TRUE, mean.only = FALSE, verbose = TRUE)
 {
   dat <- as.matrix(dat)
   
@@ -85,6 +87,13 @@ combat <- function(dat, batch, mod = NULL, nuisance.mod = NULL,
   check <- apply(design, 2, function(x) all(x == 1))
   design <- as.matrix(design[,!check])
   
+  if (!is.null(var.mod)) {
+    design.sigma <- cbind(batchmod,var.mod)
+    # check for intercept in covariates, and drop if present
+    check <- apply(design.sigma, 2, function(x) all(x == 1))
+    design.sigma <- as.matrix(design.sigma[,!check])
+  }
+  
   # Number of covariates or covariate levels
   if (verbose) cat("[combat] Adjusting for",ncol(design)-ncol(batchmod),'covariate(s) or covariate level(s)\n')
   
@@ -118,16 +127,66 @@ combat <- function(dat, batch, mod = NULL, nuisance.mod = NULL,
     B.hat <- tcrossprod(B.hat1, dat)
   }
   
+  varB.hat <- NULL
+  
   # Standardization Model
   grand.mean <- crossprod(n.batches/n.array, B.hat[1:n.batch,])
   var.pooled <- ((dat-t(design%*%B.hat))^2)%*%rep(1/n.array,n.array)
+  sd.pooled <- (tcrossprod(sqrt(var.pooled), rep(1,n.array))) # rearrange as p x n
   stand.mean <- crossprod(grand.mean, t(rep(1,n.array)))
   
   if(!is.null(design)){
     tmp <- design;tmp[,c(1:n.batch)] <- 0
     stand.mean <- stand.mean+t(tmp%*%B.hat)
-  }	
-  s.data <- (dat-stand.mean)/(tcrossprod(sqrt(var.pooled), rep(1,n.array)))
+  }
+  
+  # Estimate variance effects if controlling for covariate effect in variance
+  # then remove predicted values (including intercept) before harmonization
+  p <- dim(dat)[1]
+  if (!is.null(var.mod)) {
+    # used to residualize out all effects except for site
+    # tailored to fit output of lmvar
+    design_bat <- design[,-n.batch] # drop last batch since is reference
+    design_bat[,1:(n.batch-1)] <- 0 # remove batches
+    design_bat <- cbind(`intercept` = rep(1, n.array), design_bat)
+    
+    design_sig_bat <- design.sigma[,-n.batch] # drop last batch since is reference
+    design_sig_bat[,1:(n.batch-1)] <- 0 # remove batches
+    design_sig_bat <- cbind(`intercept` = rep(1, n.array), design_sig_bat)
+    
+    var_fit_all <- list() # for debugging
+    stand.mean <- matrix(0, p, n.array)
+    sd.pooled <- matrix(0, p, n.array)
+    
+    # store mean/variance effects
+    B.hat <- matrix(0, ncol(design_bat), p, 
+                    dimnames = list(colnames(design_bat), rownames(dat)))
+    varB.hat <- matrix(0, ncol(design_sig_bat), p, 
+                       dimnames = list(colnames(design_sig_bat), rownames(dat)))
+    
+    for (i in 1:p) {
+      var_fit <- lmvar(dat[i,], X_mu = design, X_sigma = design.sigma)
+      B.hat[,i] <- var_fit$coefficients_mu
+      varB.hat[,i] <- var_fit$coefficients_sigma
+
+      stand.mean[i,] <- design_bat %*% var_fit$coefficients_mu
+      sd.pooled[i,] <- exp(design_sig_bat %*% var_fit$coefficients_sigma)
+      var_fit_all[[i]] <- var_fit # store for debugging
+      
+      if (!is.null(train)) {
+        var_fit <- lmvar(scores[train,i], X_sigma = design[train,])
+        B.hat[,i] <- var_fit$coefficients_mu
+        varB.hat[,i] <- var_fit$coefficients_sigma
+        
+        stand.mean[i,] <- design_bat %*% var_fit$coefficients_mu
+        sd.pooled[i,] <- exp(design_sig_bat %*% var_fit$coefficients_sigma)
+        
+        var_fit_all[[i]] <- var_fit # store for debugging
+      }
+    }
+  }
+  
+  s.data <- (dat-stand.mean)/sd.pooled
   
   ## Get regression batch effect parameters
   if (eb){
@@ -171,8 +230,7 @@ combat <- function(dat, batch, mod = NULL, nuisance.mod = NULL,
         delta.star <- rbind(delta.star,temp[2,])
       }
     }
-    
-  } 
+  }
   
   if (mean.only) {
     delta.star <- array(1, dim = dim(delta.star))
@@ -184,14 +242,16 @@ combat <- function(dat, batch, mod = NULL, nuisance.mod = NULL,
   j <- 1
   for (i in batches){
     if (eb){
-      bayesdata[,i] <- (bayesdata[,i]-t(batch.design[i,]%*%gamma.star))/tcrossprod(sqrt(delta.star[j,]), rep(1,n.batches[j]))
+      bayesdata[,i] <- (bayesdata[,i]-t(batch.design[i,]%*%gamma.star))/
+        tcrossprod(sqrt(delta.star[j,]), rep(1,n.batches[j]))
     } else {
-      bayesdata[,i] <- (bayesdata[,i]-t(batch.design[i,]%*%gamma.hat))/tcrossprod(sqrt(delta.hat[j,]), rep(1,n.batches[j]))
+      bayesdata[,i] <- (bayesdata[,i]-t(batch.design[i,]%*%gamma.hat))/
+        tcrossprod(sqrt(delta.hat[j,]), rep(1,n.batches[j]))
     }
     j <- j+1
   }
   
-  # Reintroduce wanted covariates
+  # If using nuisance.mod, reintroduce wanted covariates
   all.mean <- crossprod(grand.mean, t(rep(1,n.array)))
   if (!is.null(nuisance.mod)) {
     tmp <- design;tmp[,c(1:n.batch)] <- 0
@@ -199,14 +259,13 @@ combat <- function(dat, batch, mod = NULL, nuisance.mod = NULL,
     wanted.mean <- all.mean+t(tmp%*%B.hat)
   }
   
-  if (!is.null(nuisance.mod)) {
-    bayesdata <- (bayesdata*(tcrossprod(sqrt(var.pooled), rep(1,n.array)))) +
-      wanted.mean
-  } else if (resid == FALSE) {
-    bayesdata <- (bayesdata*(tcrossprod(sqrt(var.pooled), rep(1,n.array)))) +
-      stand.mean
+  # Reintroduce covariate effects and intercept
+  if (resid) {
+    bayesdata <- bayesdata*sd.pooled
+  } else if (!is.null(nuisance.mod)) {
+    bayesdata <- bayesdata*sd.pooled + wanted.mean
   } else {
-    bayesdata <- bayesdata*(tcrossprod(sqrt(var.pooled), rep(1,n.array)))
+    bayesdata <- bayesdata*sd.pooled + stand.mean
   }
   
   return(list(dat.combat=bayesdata,
@@ -215,6 +274,7 @@ combat <- function(dat, batch, mod = NULL, nuisance.mod = NULL,
               gamma.star=gamma.star, delta.star=delta.star,
               gamma.bar=gamma.bar, t2=t2, a.prior=a.prior, b.prior=b.prior, 
               batch=batch, mod=mod,
-              stand.mean=stand.mean, stand.sd=sqrt(var.pooled)[,1],
-              B.hat = B.hat))
+              stand.mean=stand.mean, stand.sd=sd.pooled,
+              B.hat = B.hat,
+              varB.hat = varB.hat))
 }
