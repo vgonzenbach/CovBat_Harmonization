@@ -11,6 +11,7 @@ import numpy.linalg as la
 import numpy as np
 
 from sklearn.decomposition import PCA
+from sklearn.preprocessing import StandardScaler
 
 def adjust_nums(numerical_covariates, drop_idxs):
     # if we dropped some values, have to adjust those with a larger index.
@@ -69,7 +70,7 @@ Returns
 corrected : pandas.DataFrame
     A (n_features, n_samples) dataframe of the batch-corrected data
 """
-def covbat(data, batch, model=None, numerical_covariates=None, pct_var=0.80, n_pc=0):
+def covbat(data, batch, model=None, numerical_covariates=None, pct_var=0.95, n_pc=0):
     if isinstance(numerical_covariates, str):
         numerical_covariates = [numerical_covariates]
     if numerical_covariates is None:
@@ -151,13 +152,17 @@ def covbat(data, batch, model=None, numerical_covariates=None, pct_var=0.80, n_p
         bayesdata[batch_idxs] = numer / denom
    
     vpsq = np.sqrt(var_pooled).reshape((len(var_pooled), 1))
-    # not adding back stand_mean or var_pooled yet
-    # bayesdata = bayesdata * np.dot(vpsq, np.ones((1, int(n_array)))) + stand_mean
+    # not adding back stand_mean yet
+    bayesdata = bayesdata * np.dot(vpsq, np.ones((1, int(n_array))))
 
-    #CovBat step: PCA then ComBat without EB on the scores
-    comdata = data
+    # CovBat step: PCA then ComBat without EB on the scores
+    # comdata = data.T
     comdata = bayesdata.T
     bmu = np.mean(comdata, axis=0)
+    # standardize data before PCA
+    scaler = StandardScaler()
+    comdata = scaler.fit_transform(comdata)
+    
     pca = PCA()
     pca.fit(comdata)
     pc_comp = pca.components_
@@ -173,9 +178,11 @@ def covbat(data, batch, model=None, numerical_covariates=None, pct_var=0.80, n_p
     full_scores.loc[range(0,npc),:] = scores_com
 
     x_covbat = bayesdata - bayesdata # create pandas DataFrame to store output
-    x_covbat = x_covbat.add(bmu, axis='index')
-    x_covbat += np.dot(full_scores.T, pc_comp).T
-    x_covbat = x_covbat * np.dot(vpsq, np.ones((1, int(n_array)))) + stand_mean
+    # x_covbat = x_covbat.add(bmu, axis='index')
+    proj = np.dot(full_scores.T, pc_comp).T
+    x_covbat += scaler.inverse_transform(proj.T).T
+    # x_covbat = x_covbat * np.dot(vpsq, np.ones((1, int(n_array)))) + stand_mean
+    x_covbat += stand_mean
  
     return x_covbat
 

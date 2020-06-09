@@ -5,6 +5,9 @@ import numpy as np
 
 import covbat as cb
 
+# import importlib
+# importlib.reload(cb)
+
 # read data from R output
 pheno = pd.read_table('bladder-pheno.txt', index_col=0)
 dat = pd.read_table('bladder-expr.txt', index_col=0)

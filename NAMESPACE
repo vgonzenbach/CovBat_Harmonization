@@ -3,6 +3,7 @@
 export(combat)
 export(combat2)
 export(covbat)
+import(lmvar)
 importFrom(matrixStats,rowMeans2)
 importFrom(matrixStats,rowSds)
 importFrom(matrixStats,rowSums2)

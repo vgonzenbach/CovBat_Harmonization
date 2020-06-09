@@ -5,7 +5,7 @@
 \title{Correcting Covariance Batch Effects: CovBat}
 \usage{
 covbat(
-  x,
+  dat,
   bat,
   mod = NULL,
   percent.var = 0.95,
@@ -22,7 +22,7 @@ covbat(
 )
 }
 \arguments{
-\item{x}{A \emph{p x n} matrix (or object coercible by \link[base]{as.matrix}
+\item{dat}{A \emph{p x n} matrix (or object coercible by \link[base]{as.matrix}
 to a numeric matrix) of observations where \emph{p} is the number of
 features and \emph{n} is the number of subjects.}
 
@@ -50,7 +50,7 @@ to estimate coefficients.}
 \item{eb}{If \code{TRUE}, uses ComBat model with empirical Bayes for mean
 and variance harmonization.}
 
-\item{parametric}{If \code{TRUE}, uses parametric adjustments in ComBat step}
+\item{parametric}{If \code{TRUE}, uses parametric updates in ComBat step.}
 
 \item{score.eb}{If \code{TRUE}, uses ComBat model with empirical Bayes for
 harmonization of scores.}

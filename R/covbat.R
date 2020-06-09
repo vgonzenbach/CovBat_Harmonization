@@ -209,12 +209,9 @@ covbat <- function(dat, bat, mod = NULL, percent.var = 0.95, n.pc = NULL,
   comdata <- (bayesdata*(tcrossprod(sqrt(var.pooled), rep(1,n.array)))) +
     stand.mean
   
-  # if std.var = FALSE, return to original scaling prior to PCA
-  if (!std.var) {
-    bayesdata <- bayesdata * (tcrossprod(sqrt(var.pooled), rep(1,n.array)))
-  }
+  bayesdata <- bayesdata * (tcrossprod(sqrt(var.pooled), rep(1,n.array)))
   
-  x_pc <- prcomp(t(bayesdata)) # PC on ComBat-adjusted data
+  x_pc <- prcomp(t(bayesdata), center = TRUE, scale. = std.var)
   
   # Subset scores based on percent of variance explained
   npc <- which(cumsum(x_pc$sdev^2/sum(x_pc$sdev^2)) > percent.var)[1]
@@ -229,10 +226,13 @@ covbat <- function(dat, bat, mod = NULL, percent.var = 0.95, n.pc = NULL,
   full_scores[,1:npc] <- t(scores_com$dat.combat)
   
   # Project scores back into observation space
-  x.covbat <- t(full_scores %*% t(x_pc$rotation)) + 
-    matrix(x_pc$center, dim(bayesdata)[1], dim(bayesdata)[2])
   if (std.var) {
-    x.covbat <- x.covbat * (tcrossprod(sqrt(var.pooled), rep(1,n.array)))
+    x.covbat <- t(full_scores %*% t(x_pc$rotation)) * 
+      matrix(x_pc$scale, dim(bayesdata)[1], dim(bayesdata)[2]) + 
+      matrix(x_pc$center, dim(bayesdata)[1], dim(bayesdata)[2])
+  } else {
+    x.covbat <- t(full_scores %*% t(x_pc$rotation)) + 
+      matrix(x_pc$center, dim(bayesdata)[1], dim(bayesdata)[2])
   }
   if (resid == FALSE) {
     x.covbat <- x.covbat + stand.mean

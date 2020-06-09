@@ -9,6 +9,7 @@ combat2(
   dat,
   batch,
   mod = NULL,
+  var.mod = NULL,
   nuisance.mod = NULL,
   train = NULL,
   resid = FALSE,
@@ -25,6 +26,9 @@ combat2(
 
 \item{mod}{An optional design matrix to preserve, usually output of 
 \link[stats]{model.matrix}.}
+
+\item{var.mod}{An optional design matrix to preserve in the variance, usually
+output of \link[stats]{model.matrix}.}
 
 \item{nuisance.mod}{An optional design matrix to regress out, usually output 
 of \link[stats]{model.matrix} without intercept.}
@@ -52,7 +56,8 @@ harmonizes the mean and variance of observations across sites under an
 empirical Bayes framework. \code{combat} additionally includes options
 to output residualized observations, estimate coefficients using a training
 subset, and regress out unwanted confounders. \code{combat2} further includes
-options to control for covariate effects in variance using \link[lmvar]
+options to control for covariate effects in variance using 
+\link[lmvar]{lmvar}
 }
 \examples{
 

@@ -15,13 +15,16 @@ combat(
   eb = TRUE,
   parametric = TRUE,
   mean.only = FALSE,
-  verbose = TRUE
+  verbose = FALSE
 )
 }
 \arguments{
-\item{dat}{}
+\item{dat}{A \emph{p x n} matrix (or object coercible by \link[base]{as.matrix}
+to a numeric matrix) of observations where \emph{p} is the number of
+features and \emph{n} is the number of subjects.}
 
-\item{batch}{}
+\item{batch}{Factor (or object coercible by \link[base]{as.factor} to a 
+factor) designating batch IDs.}
 
 \item{mod}{An optional design matrix to preserve, usually output of 
 \link[stats]{model.matrix}.}
@@ -29,17 +32,18 @@ combat(
 \item{nuisance.mod}{An optional design matrix to regress out, usually output 
 of \link[stats]{model.matrix} without intercept.}
 
-\item{train}{}
+\item{train}{Optional logical vector specifying subset of observations used
+to estimate coefficients.}
 
-\item{resid}{}
+\item{resid}{Whether to leave intercept and covariates regressed out.}
 
-\item{eb}{}
+\item{eb}{If \code{TRUE}, uses ComBat model with empirical Bayes.}
 
-\item{parametric}{}
+\item{parametric}{If \code{TRUE}, uses parametric updates.}
 
-\item{mean.only}{}
+\item{mean.only}{If \code{TRUE}, ComBat step does not harmonize variance.}
 
-\item{verbose}{}
+\item{verbose}{Whether additional details are printed to console.}
 }
 \value{
 

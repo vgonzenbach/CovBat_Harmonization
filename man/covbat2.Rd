@@ -8,6 +8,7 @@ covbat2(
   x,
   bat,
   mod = NULL,
+  score.mod = NULL,
   percent.var = 0.95,
   n.pc = NULL,
   train = NULL,
@@ -31,6 +32,9 @@ factor) designating batch IDs.}
 
 \item{mod}{Optional design matrix of covariates to preserve, usually from 
 \link[stats]{model.matrix}.}
+
+\item{score.mod}{Optional design matrix of covariates to preserve in the
+PC score variance, usually from \link[stats]{model.matrix}.}
 
 \item{percent.var}{Numeric. The number of harmonized principal component 
 scores is selected to explain this proportion of the variance.}
@@ -59,12 +63,9 @@ harmonization of scores.}
 for harmonization of scores.}
 
 \item{verbose}{Whether additional details are printed to console.}
-
-\item{score.mod}{Optional design matrix of covariates to preserve in the
-PC score variance, usually from \link[stats]{model.matrix}.}
 }
 \value{
-\code{covbat} returns a list containing the following components:
+\code{covbat2} returns a list containing the following components:
 \item{dat.covbat}{Harmonized data as a matrix with same dimensions as 
    \code{x}}
 \item{combat.out}{List output of \link[CovBat]{combat} from the ComBat step}
@@ -77,5 +78,7 @@ PC score variance, usually from \link[stats]{model.matrix}.}
 \code{covbat2} harmonizes covariance of observations across sites. It
 first applies ComBat to harmonize mean and variance then adjusts variance of
 PC scores to harmonize covariance. This version includes an experimental
-option to control for covariates in the harmonization of PC scores.
+option to control for covariates in the harmonization of PC scores. Also, 
+this version of CovBat uses easier-to-follow code relying on 
+\link[CovBat]{combat2}
 }
