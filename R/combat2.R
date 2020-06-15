@@ -48,7 +48,7 @@
 #' proposed by Wachinger et al. (2020), \url{https://arxiv.org/abs/2002.05049}
 combat2 <- function(dat, batch, mod = NULL, var.mod = NULL, nuisance.mod = NULL, 
                    train = NULL, resid = FALSE, eb = TRUE, 
-                   parametric = TRUE, mean.only = FALSE, verbose = TRUE)
+                   parametric = TRUE, mean.only = FALSE, verbose = FALSE)
 {
   dat <- as.matrix(dat)
   
@@ -174,7 +174,8 @@ combat2 <- function(dat, batch, mod = NULL, var.mod = NULL, nuisance.mod = NULL,
       var_fit_all[[i]] <- var_fit # store for debugging
       
       if (!is.null(train)) {
-        var_fit <- lmvar(scores[train,i], X_sigma = design[train,])
+        var_fit <- lmvar(dat[i, train], X_mu = design[train,],
+                         X_sigma = design.sigma[train,])
         B.hat[,i] <- var_fit$coefficients_mu
         varB.hat[,i] <- var_fit$coefficients_sigma
         

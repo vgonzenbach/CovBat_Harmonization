@@ -1,5 +1,6 @@
 .Rproj.user
-.Rhistory
-.RData
-.Ruserdata
+*.Rhistory
+*.RData
+*.Ruserdata
 Python/*.txt
+*.DS_Store

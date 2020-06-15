@@ -54,14 +54,14 @@
 #' \item{prcomp.out}{PCA results after ComBat, output of \link[stats]{prcomp}}
 #' 
 #' @examples
-covbat2 <- function(x, bat, mod = NULL, score.mod = NULL, percent.var = 0.95, 
-                    n.pc = NULL, train = NULL, mean.only = FALSE, 
-                    std.var = TRUE, resid = FALSE, eb = TRUE, parametric = TRUE,
-                    score.eb = FALSE, score.parametric = TRUE, verbose = FALSE)
+covbat2 <- function(x, bat, mod = NULL, score.mod = NULL, train = NULL,
+                    percent.var = 0.95, n.pc = NULL, std.var = TRUE, 
+                    resid = FALSE, score.eb = FALSE, score.parametric = TRUE, 
+                    verbose = FALSE, ...)
 {
   # Use ComBat to remove mean/variance effects
-  com_out <- combat2(x, bat, mod = mod, mean.only = mean.only, eb = eb,
-                      parametric = parametric, resid = TRUE, verbose = verbose)
+  com_out <- combat2(x, bat, mod = mod, resid = TRUE, train = train, 
+                     verbose = verbose, ...)
   x_com <- com_out$dat.combat
   
   # PC on ComBat-adjusted data
@@ -75,7 +75,8 @@ covbat2 <- function(x, bat, mod = NULL, score.mod = NULL, percent.var = 0.95,
   
   # ComBat without covariates to remove site effect in score mean/variance
   scores_com <- combat2(t(scores), bat, eb = score.eb, var.mod = score.mod,
-                        parametric = score.parametric, verbose = verbose)
+                        parametric = score.parametric, train = train,
+                        verbose = verbose)
   full_scores <- x_pc$x
   full_scores[,1:npc] <- t(scores_com$dat.combat)
   

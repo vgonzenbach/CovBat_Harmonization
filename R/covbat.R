@@ -14,9 +14,9 @@
 #' first applies ComBat to harmonize mean and variance then adjusts variance of
 #' PC scores to harmonize covariance.
 #'
-#' @param dat A \emph{p x n} matrix (or object coercible by \link[base]{as.matrix}
-#'   to a numeric matrix) of observations where \emph{p} is the number of
-#'   features and \emph{n} is the number of subjects.
+#' @param dat A \emph{p x n} matrix (or object coercible by
+#'   \link[base]{as.matrix} to a numeric matrix) of observations where \emph{p}
+#'   is the number of features and \emph{n} is the number of subjects.
 #' @param bat Factor (or object coercible by \link[base]{as.factor} to a 
 #'    factor) designating batch IDs.
 #' @param mod Optional design matrix of covariates to preserve, usually from 
