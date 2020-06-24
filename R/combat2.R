@@ -47,8 +47,8 @@
 #' @seealso Modification to ComBat to regress out unwanted confounders 
 #' proposed by Wachinger et al. (2020), \url{https://arxiv.org/abs/2002.05049}
 combat2 <- function(dat, batch, mod = NULL, var.mod = NULL, nuisance.mod = NULL, 
-                   train = NULL, resid = FALSE, eb = TRUE, 
-                   parametric = TRUE, mean.only = FALSE, verbose = FALSE)
+                    var.wls = TRUE, train = NULL, resid = FALSE, eb = TRUE, 
+                    parametric = TRUE, mean.only = FALSE, verbose = FALSE)
 {
   dat <- as.matrix(dat)
   
@@ -155,34 +155,50 @@ combat2 <- function(dat, batch, mod = NULL, var.mod = NULL, nuisance.mod = NULL,
     design_sig_bat <- cbind(`intercept` = rep(1, n.array), design_sig_bat)
     
     var_fit_all <- list() # for debugging
-    stand.mean <- matrix(0, p, n.array)
     sd.pooled <- matrix(0, p, n.array)
-    
-    # store mean/variance effects
-    B.hat <- matrix(0, ncol(design_bat), p, 
-                    dimnames = list(colnames(design_bat), rownames(dat)))
     varB.hat <- matrix(0, ncol(design_sig_bat), p, 
                        dimnames = list(colnames(design_sig_bat), rownames(dat)))
-    
-    for (i in 1:p) {
-      var_fit <- lmvar(dat[i,], X_mu = design, X_sigma = design.sigma)
-      B.hat[,i] <- var_fit$coefficients_mu
-      varB.hat[,i] <- var_fit$coefficients_sigma
+    if (var.wls) {
+      stand.mean <- matrix(0, p, n.array)
+      B.hat <- matrix(0, ncol(design_bat), p, 
+                      dimnames = list(colnames(design_bat), rownames(dat)))
+    }
 
-      stand.mean[i,] <- design_bat %*% var_fit$coefficients_mu
-      sd.pooled[i,] <- exp(design_sig_bat %*% var_fit$coefficients_sigma)
-      var_fit_all[[i]] <- var_fit # store for debugging
-      
-      if (!is.null(train)) {
-        var_fit <- lmvar(dat[i, train], X_mu = design[train,],
-                         X_sigma = design.sigma[train,])
+    for (i in 1:p) {
+      if (var.wls) {
+        var_fit <- lmvar(dat[i,], X_mu = design, X_sigma = design.sigma)
         B.hat[,i] <- var_fit$coefficients_mu
         varB.hat[,i] <- var_fit$coefficients_sigma
         
         stand.mean[i,] <- design_bat %*% var_fit$coefficients_mu
         sd.pooled[i,] <- exp(design_sig_bat %*% var_fit$coefficients_sigma)
-        
         var_fit_all[[i]] <- var_fit # store for debugging
+        
+        if (!is.null(train)) {
+          var_fit <- lmvar(dat[i, train], X_mu = design[train,],
+                           X_sigma = design.sigma[train,])
+          B.hat[,i] <- var_fit$coefficients_mu
+          varB.hat[,i] <- var_fit$coefficients_sigma
+          
+          stand.mean[i,] <- design_bat %*% var_fit$coefficients_mu
+          sd.pooled[i,] <- exp(design_sig_bat %*% var_fit$coefficients_sigma)
+          
+          var_fit_all[[i]] <- var_fit # store for debugging
+        }
+      } else {
+        var_fit <- lmvar(dat[i,], X_sigma = design.sigma)
+        varB.hat[,i] <- var_fit$coefficients_sigma
+        
+        sd.pooled[i,] <- exp(design_sig_bat %*% var_fit$coefficients_sigma)
+        var_fit_all[[i]] <- var_fit # store for debugging
+        
+        if (!is.null(train)) {
+          var_fit <- lmvar(dat[i, train], X_sigma = design.sigma[train,])
+          varB.hat[,i] <- var_fit$coefficients_sigma
+          
+          sd.pooled[i,] <- exp(design_sig_bat %*% var_fit$coefficients_sigma)
+          var_fit_all[[i]] <- var_fit # store for debugging
+        }
       }
     }
   }
