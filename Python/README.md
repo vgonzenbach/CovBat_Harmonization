@@ -37,7 +37,7 @@ import covbat
 <div id='id-section2'/>
 
 ## 2. Testing
-From the original ComBat Python implementation ([https://github.com/brentp/combat.py](https://github.com/brentp/combat.py)), we include a script `test.py` to compare the R and Python implementations of CovBat. This script finds the maximum difference between the two implementations in the `bladderbatch` dataset
+From the original ComBat Python implementation ([https://github.com/brentp/combat.py](https://github.com/brentp/combat.py)), we include a script `test.py` to compare the R and Python implementations of both ComBat and CovBat. This script finds the maximum difference between the two implementations in the `bladderbatch` dataset and confirms that it is less than 10<sup>-4</sup>. You first need to run the R script `R-test.R`, which generates the input data from the `bladderbatch` package and harmonized outputs for the R implementations `r-combat.txt` and `r-covbat.txt`.
 
 <div id='id-section3'/>
 
