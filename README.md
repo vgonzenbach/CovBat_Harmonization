@@ -28,11 +28,11 @@ If you are using CovBat for harmonization of mean and covariance, please cite th
 <div id='id-section1'/>
 
 ## 1. Installation
-This R package can be installed via devtools by running the following code
+The R package can be installed via devtools by running the following code
 
 ```
 # install.packages("devtools")
-devtools::install_github("andy1764/CovBat_Harmonization")
+devtools::install_github("andy1764/CovBat_Harmonization/R")
 ```
 
 Then, you can load this package via
@@ -41,29 +41,18 @@ Then, you can load this package via
 library(CovBat)
 ```
 
+The R package provides the `covbat` function for harmonization of covariance and the `combat` function which provides some additional options over the original [ComBat](https://github.com/Jfortin1/ComBatHarmonization) package.
+
 For Python, please visit the Python subdirectory.
 
 <div id='id-section2'/>
 
 ## 2. Background
+Current harmonization methods often focus on addressing scanner differences in the mean and variance of features. However, machine learning methods employed in multivariate pattern analysis (MVPA) are known to leverage additional properties of the data, including covariance. In our recent [preprint](https://www.biorxiv.org/content/10.1101/858415v3), we show that ComBat, a state-of-the-art method designed to harmonize mean and variance, is unable to fully prevent detection of scanner manufacturer through MVPA in the Alzheimer's Disease Neuroimaging Initiative data. We design CovBat to harmonize the covariance of multivariate features and show that it can almost fully prevent detection of scanner properties.
 
-Placeholder for CovBat introduction. ComBat introduction from https://github.com/Jfortin1/ComBatHarmonization follows:
-
-Imaging data suffer from technical between-scanner variation that hinders comparisons of images across imaging sites, scanners and over time. This includes common imaging modalities, such as MRI, fMRI and DTI, as well as measurements derived from those modalities, for instance ROI volumes, RAVENS maps, cortical thickness measurements, connectome matrices, etc. To maximize statistical power, post-processing data harmonization is a powerful technique to remove unwanted variation when combining data across scanners and sites. 
-
-In two recent papers ([harmonization of DTI data](https://www.sciencedirect.com/science/article/pii/S1053811917306948?via%3Dihub#!) and [harmonization of cortical thickness measurements](https://www.sciencedirect.com/science/article/pii/S105381191730931X)) we have shown that [ComBat](https://academic.oup.com/biostatistics/article/8/1/118/252073/Adjusting-batch-effects-in-microarray-expression), a popular batch-effect correction tool used in genomics, succesffuly removes inter-site technical variability while preserving inter-site biological variability. We showed that ComBat performs well for multi-site imaging studies that only have a few participants per site. We also showed that ComBat was robust to unbalanced studies, that is studies for which the biological covariate of interest is not balanced across sites. 
-
-We recommend to use the ComBat harmonization method after imaging processing, just right before the statistical analysis. The ComBat harmonization requires the imaging data to be represented in a matrix where rows are the imaging features (for instance voxels, ROIs or connectome edges) and columns are the participants. For example, for voxel-level analyses, this usually requires the images to be registered to a common template space. 
-
-The ComBat algorithm needs two mandatory inputs:
-- ***The data matrix***. Rows are features and columns are participants. 
-- ***The site, study or scanner variable***. The algorithm can only handle one variable. You should provide the smallest unit of the study that you believe introduces unwanted variable. For instance, for a study with 2 sites and 3 scanners (1 site with 1 scanner, 1 site with 2 scanners), the variable for scanner should be used. 
-
-The ComBat algorithm also accepts an optional input:
-- ***Biological variables***. You can provide biological covariates, such as disease status, age, gender, to ensure that the harmonization technique does not remove the effects of those variables on the imaging data. The algorithm will take the variability associated with those variables in the estimation of the site/scanner effects. 
+CovBat is meant to be applied after initial preprocessing of the images to obtain a set of features and before statistical analyses. The application of CovBat is not limited to neuroimaging data; however, it has yet to be tested in other types of data.
 
 <div id='id-section3'/>
 
 ## 3. Software
-
-The reference implementation (Standard Version) of ComBat, developed for gene expression analyses, is written in R and is part of the `sva` package available through the Bioconductor project [here](https://bioconductor.org/packages/release/bioc/html/sva.html). This package is an extension of the original ComBat method for harmonization of covariance for multivariate data. We use the same open-source license as the `sva` package, that is the Artistic License 2.0. 
+The R implementation of CovBat is based on the [ComBat](https://github.com/Jfortin1/ComBatHarmonization) package maintained by Jean-Philippe Fortin. The Python implementation of CovBat is a modification of the ComBat package for Python [here](https://github.com/brentp/combat.py). 
