@@ -42,7 +42,6 @@ From the original ComBat Python implementation ([https://github.com/brentp/comba
 <div id='id-section3'/>
 
 ## 3. Software
-
 The reference implementation (Standard Version) of ComBat, developed for gene expression analyses, is written in R and is part of the `sva` package available through the Bioconductor project [here](https://bioconductor.org/packages/release/bioc/html/sva.html). This package is an extension of the original ComBat method for harmonization of covariance for multivariate data. We use the same open-source license as the `sva` package, that is the Artistic License 2.0.
 
 This Python script is adapted from a port of ComBat done by *brentp* on GitHub ([https://github.com/brentp/combat.py](https://github.com/brentp/combat.py))
